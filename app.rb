@@ -71,17 +71,32 @@ end
 get "/rsvps/:id/edit" do
     puts "params: #{params}"
 
+    @rsvp = rsvps_table.where(id: params["id"]).to_a[0]
+    @event = events_table.where(id: @rsvp[:event_id]).to_a[0]
     view "edit_rsvp"
 end
 
 post "/rsvps/:id/update" do
     puts "params: #{params}"
 
+    rsvp = rsvps_table.where(id: params["id"]).to_a[0]
+    @event = events_table.where(id: rsvp[:event_id]).to_a[0]
+
+    rsvps_table.where(id: params["id"]).update(
+        going: params["going"],
+        comments: params["comments"]
+    )
+
     view "update_rsvp"
 end
 
 get "/rsvps/:id/destroy" do
     puts "params: #{params}"
+
+    rsvp = rsvps_table.where(id: params["id"]).to_a[0]
+    @event = events_table.where(id: rsvp[:event_id]).to_a[0]
+
+    rsvps_table.where(id: params["id"]).delete
 
     view "destroy_rsvp"
 end
