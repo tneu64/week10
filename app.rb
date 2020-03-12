@@ -21,7 +21,11 @@ users_table = DB.from(:users)
 
 before do
     @current_user = users_table.where(id: session["user_id"]).to_a[0]
+    
 end
+
+get '/send_text' do
+    account_sid = ENV["TWILIO_ACCOUNT_SID"]
 
 # homepage and list of events (aka "index")
 get "/" do
@@ -65,7 +69,7 @@ post "/events/:id/rsvps/create" do
         comments: params["comments"],
         going: params["going"]
     )
-    view "create_rsvp"
+    redirect "events/#{@event[:id]}"
 end
 
 get "/rsvps/:id/edit" do
@@ -78,6 +82,16 @@ end
 
 post "/rsvps/:id/update" do
     puts "params: #{params}"
+
+    @event = events_table.where(id: params[:id]).to_a[0]
+    @rsvp = rsvps_table.where(id: params[:id]).to_a[0]
+
+    @rsvp = rsvps_table.where(
+        id: params["id"]).update(
+            user_id: session["user_id"],
+            comments: params["comments"],
+            going: params["going"]
+            )
 
     view "update_rsvp"
 end
@@ -101,13 +115,18 @@ end
 # receive the submitted signup form (aka "create")
 post "/users/create" do
     puts "params: #{params}"
-
-    users_table.insert(
-        name: params["name"],
-        email: params["email"],
-        password: BCrypt::Password.create(params["password"])
-    )
-    view "create_user"
+    # if there's already a user wit this email, skip and show error
+    existing_user = users_table.where(email: params["email"]).to_a[0]
+    if existing_user
+        view "error"
+    else
+        users_table.insert(
+            name: params["name"],
+            email: params["email"],
+            password: BCrypt::Password.create(params["password"])
+        )
+        view "create_user"
+    end
 end
 
 # display the login form (aka "new")
@@ -139,5 +158,6 @@ end
 get "/logout" do
     # remove encrypted cookie for logged out user
     session["user_id"] = nil
-    view "logout"
+    # view "logout" replace this with a redirect to a different page
+    redirect "/logins/new"
 end
